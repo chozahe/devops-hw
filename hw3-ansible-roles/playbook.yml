@@ -1,0 +1,32 @@
+---
+- name: Настройка пользователей и рабочих директорий
+  hosts: all
+  become: true
+  roles:
+    - role: user_setup
+      vars:
+        users:
+          - name: devops_user
+            group: devops_user
+            shell: /bin/bash
+            workdir: devops_workdir
+            dir_mode: "660"
+          - name: deploy_bot
+            group: deploy_bot
+            shell: /bin/bash
+            workdir: deploy_workdir
+            dir_mode: "660"
+
+- name: Настройка SSH
+  hosts: all
+  become: true
+  roles:
+    - role: ssh_setup
+      vars:
+        users:
+          - name: devops_user
+            group: devops_user
+            ssh_key: "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIDi98aoS3WzrdYXxlparjDbNCYlQ/KboIAPUylNksHc8 molecule-test"
+          - name: deploy_bot
+            group: deploy_bot
+            ssh_key: "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIDi98aoS3WzrdYXxlparjDbNCYlQ/KboIAPUylNksHc8 molecule-test"

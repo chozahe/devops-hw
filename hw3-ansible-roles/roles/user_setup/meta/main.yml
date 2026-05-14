@@ -1,0 +1,22 @@
+---
+# meta/main.yml — Метаданные роли user_setup
+galaxy_info:
+  role_name: user_setup
+  description: Создание пользователей, групп, выдача sudo и рабочих директорий
+  author: chozahe
+  license: MIT
+  platforms:
+    - name: Ubuntu
+      versions:
+        - focal
+        - jammy
+    - name: Debian
+      versions:
+        - bullseye
+        - bookworm
+  galaxy_tags:
+    - users
+    - sudo
+    - system
+
+dependencies: []

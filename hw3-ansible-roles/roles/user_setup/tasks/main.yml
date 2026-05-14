@@ -1,0 +1,44 @@
+---
+# tasks/main.yml — Роль user_setup
+
+- name: Создать группу {{ item.group | default(item.name) }}
+  group:
+    name: "{{ item.group | default(item.name) }}"
+    state: present
+  loop: "{{ users }}"
+  loop_control:
+    label: "{{ item.name }}"
+
+- name: Создать пользователя {{ item.name }}
+  user:
+    name: "{{ item.name }}"
+    group: "{{ item.group | default(item.name) }}"
+    shell: "{{ item.shell | default('/bin/bash') }}"
+    create_home: true
+    state: present
+  loop: "{{ users }}"
+  loop_control:
+    label: "{{ item.name }}"
+
+- name: Выдать права sudo для пользователей
+  copy:
+    content: "{{ item.name }} ALL=(ALL) NOPASSWD: ALL\n"
+    dest: "/etc/sudoers.d/{{ item.name }}"
+    owner: root
+    group: root
+    mode: "0440"
+    validate: visudo -cf %s
+  loop: "{{ users }}"
+  loop_control:
+    label: "{{ item.name }}"
+
+- name: Создать рабочие директории в /opt
+  file:
+    path: "{{ workdir_base | default('/opt') }}/{{ item.workdir | default(item.name + '_workdir') }}"
+    state: directory
+    owner: "{{ item.name }}"
+    group: "{{ item.group | default(item.name) }}"
+    mode: "{{ item.dir_mode | default('660') }}"
+  loop: "{{ users }}"
+  loop_control:
+    label: "{{ item.name }}"

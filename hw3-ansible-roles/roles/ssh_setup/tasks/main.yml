@@ -1,0 +1,56 @@
+---
+# tasks/main.yml — Роль ssh_setup
+
+- name: Создать директорию ~/.ssh для пользователей
+  file:
+    path: "/home/{{ item.name }}/.ssh"
+    state: directory
+    owner: "{{ item.name }}"
+    group: "{{ item.group | default(item.name) }}"
+    mode: "0700"
+  loop: "{{ users }}"
+  loop_control:
+    label: "{{ item.name }}"
+
+- name: Добавить публичные SSH-ключи в authorized_keys
+  authorized_key:
+    user: "{{ item.name }}"
+    state: present
+    key: "{{ item.ssh_key }}"
+  loop: "{{ users }}"
+  loop_control:
+    label: "{{ item.name }}"
+
+- name: Установить права на authorized_keys
+  file:
+    path: "/home/{{ item.name }}/.ssh/authorized_keys"
+    owner: "{{ item.name }}"
+    group: "{{ item.group | default(item.name) }}"
+    mode: "0600"
+  loop: "{{ users }}"
+  loop_control:
+    label: "{{ item.name }}"
+
+- name: Отключить PasswordAuthentication
+  lineinfile:
+    path: /etc/ssh/sshd_config
+    regexp: '^#?PasswordAuthentication'
+    line: 'PasswordAuthentication no'
+    state: present
+  notify: restart sshd
+
+- name: Отключить ChallengeResponseAuthentication
+  lineinfile:
+    path: /etc/ssh/sshd_config
+    regexp: '^#?ChallengeResponseAuthentication'
+    line: 'ChallengeResponseAuthentication no'
+    state: present
+  notify: restart sshd
+
+- name: Отключить UsePAM
+  lineinfile:
+    path: /etc/ssh/sshd_config
+    regexp: '^#?UsePAM'
+    line: 'UsePAM no'
+    state: present
+  notify: restart sshd

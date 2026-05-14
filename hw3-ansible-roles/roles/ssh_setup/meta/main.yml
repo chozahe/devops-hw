@@ -1,0 +1,18 @@
+---
+# meta/main.yml — Метаданные роли ssh_setup
+galaxy_info:
+  role_name: ssh_setup
+  description: Настройка SSH-авторизации по ключам и отключение парольной аутентификации
+  author: chozahe
+  license: MIT
+  platforms:
+    - name: Ubuntu
+      versions:
+        - focal
+        - jammy
+  galaxy_tags:
+    - ssh
+    - security
+    - hardening
+
+dependencies: []

@@ -1,0 +1,7 @@
+---
+# handlers/main.yml — Обработчики
+
+- name: restart sshd
+  service:
+    name: ssh
+    state: restarted

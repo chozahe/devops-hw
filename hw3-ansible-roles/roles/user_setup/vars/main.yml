@@ -1,0 +1,15 @@
+---
+# vars/main.yml — Данные пользователей для роли user_setup
+
+users:
+  - name: devops_user
+    group: devops_user
+    shell: /bin/bash
+    workdir: devops_workdir
+    dir_mode: "660"
+
+  - name: deploy_bot
+    group: deploy_bot
+    shell: /bin/bash
+    workdir: deploy_workdir
+    dir_mode: "660"

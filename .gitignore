@@ -1,0 +1,11 @@
+*.pem
+*.key
+__pycache__/
+*.pyc
+molecule/**/__pycache__/
+molecule_test_key
+molecule_test_key.pub
+.idea/
+.vscode/
+*.swp
+.DS_Store

@@ -1,0 +1,11 @@
+---
+# vars/main.yml — Данные SSH-ключей
+
+users:
+  - name: devops_user
+    group: devops_user
+    ssh_key: "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIDi98aoS3WzrdYXxlparjDbNCYlQ/KboIAPUylNksHc8 molecule-test"
+
+  - name: deploy_bot
+    group: deploy_bot
+    ssh_key: "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIDi98aoS3WzrdYXxlparjDbNCYlQ/KboIAPUylNksHc8 molecule-test"
