@@ -1,0 +1,21 @@
+FROM ubuntu:22.04
+
+LABEL description="Целевой хост для тестирования Ansible playbook (ДЗ №2 DevOps)"
+
+RUN apt-get update && apt-get install -y \
+    openssh-server \
+    sudo \
+    python3 \
+    && rm -rf /var/lib/apt/lists/*
+
+RUN mkdir -p /var/run/sshd && \
+    sed -i 's/#PasswordAuthentication yes/PasswordAuthentication yes/' /etc/ssh/sshd_config && \
+    sed -i 's/#PermitRootLogin prohibit-password/PermitRootLogin yes/' /etc/ssh/sshd_config
+
+RUN useradd -m -s /bin/bash ansible && \
+    echo 'ansible:temp123' | chpasswd && \
+    usermod -aG sudo ansible
+
+EXPOSE 22
+
+CMD ["/usr/sbin/sshd", "-D"]

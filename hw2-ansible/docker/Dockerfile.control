@@ -1,0 +1,18 @@
+FROM ubuntu:22.04
+
+LABEL description="Управляющий узел Ansible для тестирования playbook (ДЗ №2 DevOps)"
+
+RUN apt-get update && apt-get install -y \
+    ansible \
+    ssh-client \
+    python3 \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /ansible
+
+COPY ansible/ /ansible/
+COPY ansible/files/ansible_test_key /root/.ssh/id_ed25519
+RUN chmod 600 /root/.ssh/id_ed25519 && \
+    ssh-keyscan -H target >> /root/.ssh/known_hosts 2>/dev/null || true
+
+CMD ["/bin/bash"]

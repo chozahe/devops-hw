@@ -1,0 +1,82 @@
+---
+- name: Настройка удалённого сервера
+  hosts: targets
+  become: true
+  vars:
+    target_user: devops_user
+    target_group: devops_user
+    user_shell: /bin/bash
+    workdir: /opt/devops_workdir
+    workdir_perms: "660"
+    ssh_pubkey_file: files/ansible_test_key.pub
+  tasks:
+    - name: Создать группу {{ target_group }}
+      group:
+        name: "{{ target_group }}"
+        state: present
+    - name: Создать пользователя {{ target_user }}
+      user:
+        name: "{{ target_user }}"
+        group: "{{ target_group }}"
+        shell: "{{ user_shell }}"
+        create_home: true
+        state: present
+    - name: Выдать права sudo пользователю {{ target_user }}
+      copy:
+        content: "{{ target_user }} ALL=(ALL) NOPASSWD: ALL\n"
+        dest: "/etc/sudoers.d/{{ target_user }}"
+        owner: root
+        group: root
+        mode: "0440"
+        validate: visudo -cf %s
+    - name: Создать директорию ~/.ssh для {{ target_user }}
+      file:
+        path: "/home/{{ target_user }}/.ssh"
+        state: directory
+        owner: "{{ target_user }}"
+        group: "{{ target_group }}"
+        mode: "0700"
+    - name: Скопировать публичный SSH-ключ в authorized_keys
+      authorized_key:
+        user: "{{ target_user }}"
+        state: present
+        key: "{{ lookup('file', ssh_pubkey_file) }}"
+    - name: Установить права на authorized_keys
+      file:
+        path: "/home/{{ target_user }}/.ssh/authorized_keys"
+        owner: "{{ target_user }}"
+        group: "{{ target_group }}"
+        mode: "0600"
+    - name: Отключить PasswordAuthentication в sshd_config
+      lineinfile:
+        path: /etc/ssh/sshd_config
+        regexp: '^#?PasswordAuthentication'
+        line: 'PasswordAuthentication no'
+        state: present
+      notify: restart sshd
+    - name: Убедиться, что ChallengeResponseAuthentication отключён
+      lineinfile:
+        path: /etc/ssh/sshd_config
+        regexp: '^#?ChallengeResponseAuthentication'
+        line: 'ChallengeResponseAuthentication no'
+        state: present
+      notify: restart sshd
+    - name: Убедиться, что UsePAM отключён
+      lineinfile:
+        path: /etc/ssh/sshd_config
+        regexp: '^#?UsePAM'
+        line: 'UsePAM no'
+        state: present
+      notify: restart sshd
+    - name: Создать директорию {{ workdir }}
+      file:
+        path: "{{ workdir }}"
+        state: directory
+        owner: "{{ target_user }}"
+        group: "{{ target_group }}"
+        mode: "{{ workdir_perms }}"
+  handlers:
+    - name: restart sshd
+      service:
+        name: ssh
+        state: restarted
