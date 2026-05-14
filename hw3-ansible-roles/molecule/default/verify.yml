@@ -1,0 +1,111 @@
+---
+# molecule/default/verify.yml — Проверка результатов
+
+- name: Verify — проверка созданных пользователей и директорий
+  hosts: all
+  become: true
+  vars:
+    test_user: devops_user
+
+  tasks:
+    - name: Проверить, что пользователь {{ test_user }} существует
+      command: id {{ test_user }}
+      register: user_exists
+      changed_when: false
+
+    - name: Убедиться, что команда id вернула 0
+      assert:
+        that:
+          - user_exists.rc == 0
+        fail_msg: "Пользователь {{ test_user }} не найден!"
+        success_msg: "✓ Пользователь {{ test_user }} существует"
+
+    - name: Проверить наличие sudoers-файла
+      stat:
+        path: "/etc/sudoers.d/{{ test_user }}"
+      register: sudoers_file
+
+    - name: Убедиться, что sudoers-файл существует
+      assert:
+        that:
+          - sudoers_file.stat.exists
+        fail_msg: "Sudoers-файл для {{ test_user }} не найден!"
+        success_msg: "✓ Sudoers-файл для {{ test_user }} существует"
+
+    - name: Проверить содержимое sudoers-файла
+      command: cat "/etc/sudoers.d/{{ test_user }}"
+      register: sudoers_content
+      changed_when: false
+
+    - name: Убедиться, что sudo без пароля настроено
+      assert:
+        that:
+          - "'NOPASSWD: ALL' in sudoers_content.stdout"
+        fail_msg: "NOPASSWD не настроено для {{ test_user }}!"
+        success_msg: "✓ NOPASSWD настроено для {{ test_user }}"
+
+    - name: Проверить рабочую директорию
+      stat:
+        path: "/opt/devops_workdir"
+      register: workdir_stat
+
+    - name: Убедиться, что рабочая директория существует
+      assert:
+        that:
+          - workdir_stat.stat.exists
+          - workdir_stat.stat.isdir
+        fail_msg: "Рабочая директория /opt/devops_workdir не найдена!"
+        success_msg: "✓ Директория /opt/devops_workdir существует"
+
+    - name: Проверить владельца директории
+      assert:
+        that:
+          - workdir_stat.stat.pw_name == test_user
+        fail_msg: "Владелец директории не {{ test_user }}!"
+        success_msg: "✓ Владелец директории: {{ test_user }}"
+
+    - name: Проверить права директории (660)
+      assert:
+        that:
+          - workdir_stat.stat.mode == "0660"
+        fail_msg: "Права на директорию не 660 (текущие: {{ workdir_stat.stat.mode }})!"
+        success_msg: "✓ Права 660 ({{ workdir_stat.stat.mode }})"
+
+    - name: Проверить authorized_keys
+      stat:
+        path: "/home/{{ test_user }}/.ssh/authorized_keys"
+      register: auth_keys
+
+    - name: Убедиться, что authorized_keys существует
+      assert:
+        that:
+          - auth_keys.stat.exists
+        fail_msg: "authorized_keys не найден для {{ test_user }}!"
+        success_msg: "✓ authorized_keys для {{ test_user }} создан"
+
+    - name: Проверить права authorized_keys (600)
+      assert:
+        that:
+          - auth_keys.stat.mode == "0600"
+        fail_msg: "Права на authorized_keys не 600!"
+        success_msg: "✓ Права 600 на authorized_keys"
+
+    - name: Проверить, что парольная аутентификация отключена
+      command: grep "^PasswordAuthentication no" /etc/ssh/sshd_config
+      register: sshd_pass_auth
+      changed_when: false
+      failed_when: false
+
+    - name: Убедиться, что PasswordAuthentication no
+      assert:
+        that:
+          - sshd_pass_auth.rc == 0
+        fail_msg: "PasswordAuthentication не отключён в sshd_config!"
+        success_msg: "✓ PasswordAuthentication отключён"
+
+    - name: ВСЕ ПРОВЕРКИ ПРОЙДЕНЫ
+      debug:
+        msg:
+          - "╔══════════════════════════════════╗"
+          - "║   ✅ Все тесты пройдены!         ║"
+          - "╚══════════════════════════════════╝"

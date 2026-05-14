@@ -1,0 +1,59 @@
+version: "3.8"
+
+services:
+  target:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.target
+    container_name: ansible-target
+    hostname: target
+    networks:
+      - ansible-net
+    ports:
+      - "2222:22"
+
+  control:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.control
+    container_name: ansible-control
+    hostname: control
+    networks:
+      - ansible-net
+    depends_on:
+      - target
+    command: >
+      bash -c "
+        echo '▶ Ожидание готовности SSH на target...' &&
+        sleep 3 &&
+        echo '▶ Запуск Ansible playbook...' &&
+        ansible-playbook -i inventory/hosts.ini playbook.yml &&
+        echo '' &&
+        echo '✔ Playbook выполнен успешно!' &&
+        echo '' &&
+        echo '▶ Проверка результатов...' &&
+        ansible -i inventory/hosts.ini all -m shell -a '
+          echo \"=== Пользователи (UID >= 1000) ===\";
+          awk -F: \"\\$3 >= 1000 && \\$1 != \"nobody\" {print \\$1}\" /etc/passwd;
+          echo \"\";
+          echo \"=== Права sudo у devops_user ===\";
+          sudo -l -U devops_user 2>/dev/null || echo \"  проверка не удалась\";
+          echo \"\";
+          echo \"=== SSH: PasswordAuthentication ===\";
+          grep \"^PasswordAuthentication\" /etc/ssh/sshd_config || echo \"  (закомментировано — используется дефолтное no)\";
+          echo \"\";
+          echo \"=== Директория /opt/devops_workdir ===\";
+          ls -la /opt/ | grep devops;
+          echo \"\";
+          echo \"=== ACL на /opt/devops_workdir ===\";
+          getfacl /opt/devops_workdir 2>/dev/null || echo \"  ACL не настроены\"
+        ' &&
+        echo '' &&
+        echo '✔ Проверка завершена' &&
+        echo 'Контейнер control будет жить ещё 60 сек...' &&
+        sleep 60
+      "
+
+networks:
+  ansible-net:
+    driver: bridge

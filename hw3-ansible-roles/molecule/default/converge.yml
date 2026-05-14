@@ -1,0 +1,26 @@
+---
+# molecule/default/converge.yml — Playbook для развёртывания
+
+- name: Converge — настройка пользователей
+  hosts: all
+  become: true
+  roles:
+    - role: user_setup
+      vars:
+        users:
+          - name: devops_user
+            group: devops_user
+            shell: /bin/bash
+            workdir: devops_workdir
+            dir_mode: "660"
+
+- name: Converge — настройка SSH
+  hosts: all
+  become: true
+  roles:
+    - role: ssh_setup
+      vars:
+        users:
+          - name: devops_user
+            group: devops_user
+            ssh_key: "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIDi98aoS3WzrdYXxlparjDbNCYlQ/KboIAPUylNksHc8 molecule-test"
